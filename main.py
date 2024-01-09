@@ -58,12 +58,19 @@ if __name__ == '__main__':
     # for label in spamDataset.labels[:5]:
     #     print(label)
 
-    twitterDataset = TwitterDataset(tokenizer, max_len)
-    print(twitterDataset.get_class_counts())
-    print(len(twitterDataset))
-    for text in twitterDataset.texts[:5]:
-        print(text)
-    for label in twitterDataset.labels[:5]:
-        print(label)
+    # twitterDataset = TwitterDataset(tokenizer, max_len)
+    # print(twitterDataset.get_class_counts())
+    # print(len(twitterDataset))
+    # for text in twitterDataset.texts[:5]:
+    #     print(text)
+    # for label in twitterDataset.labels[:5]:
+    #     print(label)
+
+    import spacy
+
+    # 获取spaCy版本
+    spacy_version = spacy.__version__
+
+    print("Your spaCy version is:", spacy_version)
 
 

@@ -6,5 +6,6 @@ __all__ = [
     'NewsDataset',
     'RedditDataset',
     'SpamDataset',
-    'TwitterDataset'
+    'TwitterDataset',
+    'BalancedDataset'
 ]

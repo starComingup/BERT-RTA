@@ -1,17 +1,17 @@
 import torch
 import torch.nn as nn
 
-class BiLSTMModel(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
-        super(BiLSTMModel, self).__init__()
-        self.embedding = nn.Embedding(input_size, hidden_size)
-        self.bilstm = nn.LSTM(hidden_size, hidden_size, bidirectional=True)
-        self.fc = nn.Linear(hidden_size * 2, output_size)
-        self.relu = nn.ReLU()
+class BiLSTM(nn.Module):
+    def __init__(self, embedding_dim, hidden_dim, output_dim, dropout):
+        super().__init__()
+        self.embedding_dim = embedding_dim
+        self.embedding = nn.EmbeddingBag(len(embedding_weights), embedding_dim, sparse=False)
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim, bidirectional=True, dropout=dropout)
+        self.fc = nn.Linear(hidden_dim * 2, output_dim)
+        self.dropout = nn.Dropout(dropout)
 
-    def forward(self, x):
-        embedded = self.embedding(x)
-        lstm_out, _ = self.bilstm(embedded)
-        lstm_out = lstm_out.mean(dim=1)  # 池化操作，可以根据任务需求选择其他池化方式
-        output = self.fc(self.relu(lstm_out))
-        return output
+    def forward(self, text):
+        embedded = self.dropout(self.embedding(text))
+        outputs, (hidden, cell) = self.lstm(embedded)
+        hidden = self.dropout(torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1))
+        return self.fc(hidden)

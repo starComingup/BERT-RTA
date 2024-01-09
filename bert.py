@@ -91,17 +91,20 @@ def validate(model, device, dataloader, criterion, is_multi):
 
 
 num_classes = 3
-result_file_path = './result/bert/financial_result_imbalance.csv'
+result_file_path = './result/bert/youtube_result_imbalance.csv'
 model_path_name = "./dataroot/models/bert-base-uncased"
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 tokenizer = BertTokenizer.from_pretrained(model_path_name)
 bert_model = BertForSequenceClassification.from_pretrained(model_path_name, num_labels=num_classes)
 bert_model.to(device)
 max_len = 128
-dataset = RedditDataset(tokenizer=tokenizer, max_length=max_len)
+# dataset = RedditDataset(tokenizer=tokenizer, max_length=max_len)
+# trainDataset, validDataset = dru.load_dataset(dataset, split_ratio=0.8)
+# warn: modify file_path in BalancedDataset class
+dataset = YoutubeDataset(tokenizer=tokenizer, max_length=max_len)
 trainDataset, validDataset = dru.load_dataset(dataset, split_ratio=0.8)
 
-num_epochs = 50
+num_epochs = 40
 batch_size = 128
 lr = 3e-5
 min_lr = 1e-8

@@ -244,10 +244,10 @@ def t5_model_fine_tuning(trainDataset, epochs, batch_size, learning_rate):
 
 def bert_model_finetune(loader, finetune_epoch):
     finetune_optimizer = AdamW(bert_model.parameters(), lr=1e-5)
+    bert_model.train()
     # train the model
     for num_epoch in range(finetune_epoch):
         total_loss = 0.0
-        bert_model.train()
         for train_batch in loader:
             ids = train_batch['input_ids'].to(device0)
             mask = train_batch['attention_mask'].to(device0)
@@ -267,31 +267,31 @@ def bert_model_finetune(loader, finetune_epoch):
 if __name__ == '__main__':
     num_classes = 3
     device1 = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
-    device0 = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device0 = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     model_path_name = "./dataroot/models/bert-base-uncased"
     bert_tokenizer = BertTokenizer.from_pretrained(model_path_name)
     bert_model = BertForSequenceClassification.from_pretrained(model_path_name, num_labels=num_classes)
     max_len = 128
     batch_size = 128
-    dataset = RedditDataset(tokenizer=bert_tokenizer, max_length=max_len)
-    trainDataset, validDataset = dru.load_dataset(dataset, split_ratio=0.8)
+    dataset = YoutubeDataset(tokenizer=bert_tokenizer, max_length=max_len)
+    trainDataset, validDataset = dru.load_dataset(dataset, split_ratio=1)
     bert_model.to(device0)
 
     '''
-        reddit 0.04（nei_ratio_threshold = 4)
+        reddit 0.04（nei_ratio_threshold = 4) epoch=5
         spam 0.8
-        financial 0.6
-        youtube 0.3
+        financial 0.3 epoch=7
+        youtube 0.18 epoch=7
         twitter 0.21
-        amazon 0.4（待定）
+        amazon 0.4 
         '''
-    threshold = 0.04
+    threshold = 0.15
     # we advise if you want to find 5 neighbors, you should set neighbor_num as 6.
     neighbor_num = 6
     '''
     pls read the data README to adjust the param
     '''
-    major_cls = 1
+    major_cls = 2
     # the neighbor ratio, set 3 means the neighbor label same as the samples num should more than 3.
     nei_ratio_threshold = 3
     # Load the T5 model and tokenizer
@@ -303,12 +303,14 @@ if __name__ == '__main__':
         1: 'positive',
         2: 'negative'
     }
-    middle_text_check = './result/middle/reddit_middle.csv'
-    result_file_path = './result/bert/reddit_result_balanced_finetune.csv'
+    middle_synthetic_text_check = './result/middle/youtube_middle.csv'
+    middle_selected_text_check = './result/middle/youtube_samples_selected.csv'
+    # result_file_path = './result/bert/reddit_result_balanced_finetune.csv'
+    balanced_text_path = './dataset/youtube statistic/'+'balanced_data.csv'
 
     dataloader = DataLoader(trainDataset, batch_size=batch_size, shuffle=True)
 
-    finetuneEpoch = 5
+    finetuneEpoch = 4
     bert_model_finetune(dataloader, finetuneEpoch)
 
     embeddings = []
@@ -355,6 +357,16 @@ if __name__ == '__main__':
 
     data_to_expand_dict, minority_lack_num_dict = cal_data_num_to_expand(trainDataset, samples_index_dict, major_cls)
 
+    selected_samples_text = []
+    selected_samples_label =[]
+    for key in data_to_expand_dict.keys():
+        selected_samples_text.extend(data_to_expand_dict[key])
+        selected_samples_label.extend([key]*len(data_to_expand_dict[key]))
+    selected_data = {'selected_texts': selected_samples_text, 'selected_labels': selected_samples_label}
+    df = pd.DataFrame(selected_data)
+    df.to_csv(middle_selected_text_check, index=False)
+    print("middle data selected successful!")
+
     del similarities
 
     t5_model.to(device0)
@@ -362,69 +374,74 @@ if __name__ == '__main__':
     # model_fine_tuning(trainDataset, t5_num_epoch, t5_batch_size, t5_learning_rate)
 
     synthetic_texts, synthetic_labels = balance_to_major_class_num(data_to_expand_dict, minority_lack_num_dict)
-    data = {'s_texts': synthetic_texts, 's_labels': synthetic_labels}
+    data = {'m_texts': synthetic_texts, 'm_labels': synthetic_labels}
     df = pd.DataFrame(data)
-    df.to_csv(middle_text_check, index=False)
+    df.to_csv(middle_synthetic_text_check, index=False)
+    print("middle data synthetic successful!")
 
     trainDataset = dru.append_dataset(trainDataset, synthetic_texts, synthetic_labels)
+    data = {'balanced_texts': trainDataset.texts, 'balanced_labels': trainDataset.labels}
+    df = pd.DataFrame(data)
+    df.to_csv(balanced_text_path, index=False)
+    print("data synthetic successful!")
 
-    # Clear GPU memory
-    torch.cuda.empty_cache()
-
-    # clear the model grad
-    bert_model.zero_grad()
-    bert_model.to(device1)
-
-    num_epochs = 50
-    lr = 3e-5
-    min_lr = 1e-8
-    T0 = 10
-    T_min = 1
-    alpha = 0.95
-
-    optimizer = optim.AdamW(bert_model.parameters(), lr=lr)
-    criterion = nn.CrossEntropyLoss()
-    scheduler = lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=T0, T_mult=1, eta_min=min_lr, last_epoch=-1)
-
-    train_dataloader = DataLoader(trainDataset, batch_size=batch_size, shuffle=True)
-    val_dataloader = DataLoader(validDataset, batch_size=batch_size, shuffle=True)
-
-    epoch_list = []
-    train_loss_list = []
-    train_acc_list = []
-    train_recall_list = []
-    train_f1_list = []
-    valid_loss_list = []
-    valid_acc_list = []
-    valid_recall_list = []
-    valid_f1_list = []
-
-    # judge is multi classes or not
-    multi_classes = num_classes > 2
-    for epoch in range(num_epochs):
-        train_loss, train_acc, train_recall, train_f1 = \
-            train(bert_model, device1, train_dataloader, optimizer, criterion, multi_classes)
-        val_loss, val_acc, val_recall, val_f1 = validate(bert_model, device1, val_dataloader, criterion, multi_classes)
-        scheduler.step(epoch)
-
-        print(f"Epoch {epoch + 1}/{num_epochs}")
-        print(
-            f"Train Loss: {train_loss:.4f}, Acc: {train_acc:.4f}, Recall: {train_recall:.4f}, F1-score: {train_f1:.4f}")
-        print(f"Val Loss: {val_loss:.4f}, Acc: {val_acc:.4f}, Recall: {val_recall:.4f}, F1-score: {val_f1:.4f}")
-        epoch_list.append(epoch + 1)
-        train_acc_list.append(round(train_acc, 4))
-        train_loss_list.append(round(train_loss, 4))
-        train_recall_list.append(round(train_recall, 4))
-        train_f1_list.append(round(train_f1, 4))
-        valid_acc_list.append(round(val_acc, 4))
-        valid_loss_list.append(round(val_loss, 4))
-        valid_recall_list.append(round(val_recall, 4))
-        valid_f1_list.append(round(val_f1, 4))
-
-    # create a blank file to store the index of DataFrame
-    columns = ['Epoch', 'Train Loss', 'Train Acc', 'Train Recall', 'Train F1', 'Val Loss', 'Val Acc', 'Val Recall',
-               'Val F1']
-    df = pd.DataFrame(list(zip(epoch_list, train_loss_list, train_acc_list, train_recall_list, train_f1_list,
-                               valid_loss_list, valid_acc_list, valid_recall_list, valid_f1_list)), columns=columns)
-    # save DataFrame to csv file
-    df.to_csv(result_file_path, index=False)
+    # # Clear GPU memory
+    # torch.cuda.empty_cache()
+    #
+    # # clear the model grad
+    # bert_model.zero_grad()
+    # bert_model.to(device1)
+    #
+    # num_epochs = 50
+    # lr = 3e-5
+    # min_lr = 1e-8
+    # T0 = 10
+    # T_min = 1
+    # alpha = 0.95
+    #
+    # optimizer = optim.AdamW(bert_model.parameters(), lr=lr)
+    # criterion = nn.CrossEntropyLoss()
+    # scheduler = lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=T0, T_mult=1, eta_min=min_lr, last_epoch=-1)
+    #
+    # train_dataloader = DataLoader(trainDataset, batch_size=batch_size, shuffle=True)
+    # val_dataloader = DataLoader(validDataset, batch_size=batch_size, shuffle=True)
+    #
+    # epoch_list = []
+    # train_loss_list = []
+    # train_acc_list = []
+    # train_recall_list = []
+    # train_f1_list = []
+    # valid_loss_list = []
+    # valid_acc_list = []
+    # valid_recall_list = []
+    # valid_f1_list = []
+    #
+    # # judge is multi classes or not
+    # multi_classes = num_classes > 2
+    # for epoch in range(num_epochs):
+    #     train_loss, train_acc, train_recall, train_f1 = \
+    #         train(bert_model, device1, train_dataloader, optimizer, criterion, multi_classes)
+    #     val_loss, val_acc, val_recall, val_f1 = validate(bert_model, device1, val_dataloader, criterion, multi_classes)
+    #     scheduler.step(epoch)
+    #
+    #     print(f"Epoch {epoch + 1}/{num_epochs}")
+    #     print(
+    #         f"Train Loss: {train_loss:.4f}, Acc: {train_acc:.4f}, Recall: {train_recall:.4f}, F1-score: {train_f1:.4f}")
+    #     print(f"Val Loss: {val_loss:.4f}, Acc: {val_acc:.4f}, Recall: {val_recall:.4f}, F1-score: {val_f1:.4f}")
+    #     epoch_list.append(epoch + 1)
+    #     train_acc_list.append(round(train_acc, 4))
+    #     train_loss_list.append(round(train_loss, 4))
+    #     train_recall_list.append(round(train_recall, 4))
+    #     train_f1_list.append(round(train_f1, 4))
+    #     valid_acc_list.append(round(val_acc, 4))
+    #     valid_loss_list.append(round(val_loss, 4))
+    #     valid_recall_list.append(round(val_recall, 4))
+    #     valid_f1_list.append(round(val_f1, 4))
+    #
+    # # create a blank file to store the index of DataFrame
+    # columns = ['Epoch', 'Train Loss', 'Train Acc', 'Train Recall', 'Train F1', 'Val Loss', 'Val Acc', 'Val Recall',
+    #            'Val F1']
+    # df = pd.DataFrame(list(zip(epoch_list, train_loss_list, train_acc_list, train_recall_list, train_f1_list,
+    #                            valid_loss_list, valid_acc_list, valid_recall_list, valid_f1_list)), columns=columns)
+    # # save DataFrame to csv file
+    # df.to_csv(result_file_path, index=False)
