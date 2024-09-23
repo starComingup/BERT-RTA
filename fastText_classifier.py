@@ -2,14 +2,14 @@ import torch
 import numpy as np
 import torch.nn as nn
 import torch.optim as optim
+from gensim.models import Word2Vec
 from torch.utils.data import Dataset, DataLoader
 from sklearn.metrics import accuracy_score, recall_score, f1_score, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-import pandas as pd
-from gensim.models import Word2Vec
 import spacy
 
 
@@ -21,24 +21,18 @@ torch.backends.cudnn.deterministic = True
 nlp = spacy.load('./dataroot/models/en_core_web_sm/en_core_web_sm/en_core_web_sm-3.7.1')
 
 # 读取数据
-file_path = './dataset/fake job posting/fake_job_postings.csv'  # 替换为你的数据集路径
-result_file_path = './result/w2v+lstm/fakejob/imbalanced.csv'
-confusion_pic_save_path ='result/w2v+lstm/fakejob/imbalanced_confusion_matrix.png'
-#tweeterN Final Evaluation => Accuracy: 0.3839, R
-# ecall: 0.3839, F1 Score: 0.2645
+file_path = './dataset/financial sentiment analysis/data.csv'  # 替换为你的数据集路径
+result_file_path = 'result/w2v+classifier/financial_w2v_imbalance.csv'
+confusion_pic_save_path ='result/w2v+classifier/financial_imbalance_confusion_matrix.png'
+
 # text_col_name = 'balanced_texts'
 # label_col_name = 'balanced_labels'
-subset = ['description','fraudulent']
-content = pd.read_csv(file_path, usecols=subset)
+content = pd.read_csv(file_path)
 
-text_col_name = 'description'
-label_col_name = 'fraudulent'
-# text_col_name = 'Column2'
-# label_col_name = 'Column1'
-
-# text_col_name = 'Sentence'
-# label_col_name = 'Sentiment'
-# content = content.dropna(axis=0, how="any")  # 剔除标签为空白的样本
+text_col_name = 'Sentence'
+label_col_name = 'Sentiment'
+content_filter = content[content['Sentiment'] != 'neutral'].copy()  # 使用 .copy() 创建副本
+content = content_filter.dropna(axis=0, how="any")  # 剔除标签为空白的样本
 
 # text_col_name = 'content'
 # label_col_name = 'sentiment'
@@ -50,22 +44,11 @@ label_col_name = 'fraudulent'
 # content_filter.reset_index(drop=True, inplace=True)
 # content = content_filter
 
-# content = pd.read_csv(file_path)
-# content_filter = content[content['Sentiment'] != 1.0].copy()  # 使用 .copy() 创建副本
-# content_filter.loc[content_filter['Sentiment'] == 2.0, 'Sentiment'] = 1.0
-# content = content_filter.dropna(axis=0, how="any")  # 剔除标签为空白的样本
-# text_col_name = 'Comment'
-# label_col_name = 'Sentiment'
-# content_filter = content[(content['overall'] != 3.0) & (content['overall'] != 4.0)].copy()
-# content_filter.loc[content_filter[label_col_name] == 2.0, label_col_name] = 1.0
-# content_filter.loc[content_filter[label_col_name] == 5.0, label_col_name] = 0.0
-# content = content_filter.dropna(axis=0, how="any")  # 剔除标签为空白的样本
-# content = content.dropna(axis=0, how="any")  # 剔除标签为空白的样本
-
-# text_col_name = 'clean_comment'
+# text_col_name = 'clean_text'
 # label_col_name = 'category'
-
-
+# content_filter = content[content['category'] != 0].copy()  # 使用 .copy() 创建副本
+# content_filter.loc[content_filter['category'] == 0, 'category'] = 0
+# content = content_filter
 # proportion_to_keep = 0.1
 # # 对每个类别进行层次抽样以保持原分布
 # sampled_data = []
@@ -76,20 +59,44 @@ label_col_name = 'fraudulent'
 # content_sampled = pd.concat(sampled_data)
 # content_sampled.reset_index(drop=True, inplace=True)
 # content = content_sampled
+# content_filter = content[content[label_col_name] != 1.0].copy()  # 使用 .copy() 创建副本
+# content_filter.loc[content_filter[label_col_name] == 2.0, label_col_name] = 1.0
+# df = content_filter.dropna(axis=0, how="any")
+# df.reset_index(drop=True, inplace=True)
+# content_filter = content[content[label_col_name] != 'neutral'].copy()
+# content = content_filter
 
-# df = content.dropna(axis=0, how="any")  # 剔除标签为空白的样本
-# df.reset_index(drop=True, inplace=True)  # 重置索引
-df = content
+# content = pd.read_csv(file_path)
+# content_filter = content[content['Sentiment'] != 1.0].copy()  # 使用 .copy() 创建副本
+# content_filter.loc[content_filter['Sentiment'] == 2.0, 'Sentiment'] = 1.0
+# content = content_filter.dropna(axis=0, how="any")  # 剔除标签为空白的样本
+# text_col_name = 'Comment'
+# label_col_name = 'Sentiment'
+
+# text_col_name = 'reviewText'
+# label_col_name = 'overall'
+# content = pd.read_csv(file_path)
+# content_filter = content[(content['overall'] != 3.0) & (content['overall'] != 4.0)].copy()
+# content_filter.loc[content_filter[label_col_name] == 2.0, label_col_name] = 1.0
+# content_filter.loc[content_filter[label_col_name] == 5.0, label_col_name] = 0.0
+# df = content_filter.dropna(axis=0, how="any")  # 剔除标签为空白的样本
+
+# text_col_name = 'Column2'
+# label_col_name = 'Column1'
+# content = pd.read_csv(file_path)
+
+df = content.dropna(axis=0, how="any")  # 剔除标签为空白的样本
+df.reset_index(drop=True, inplace=True)  # 重置索引
 # 划分训练集和测试集
 train_df, test_df = train_test_split(df, test_size=0.2, random_state=SEED)
-print(len(test_df))
+
 # 分词和预处理文本
 def tokenize_text(text):
-    return [token.text for token in nlp(str(text))]
+    return [token.text for token in nlp(text)]
 
 # 将文本数据转换为列表形式的分词后的文本
-tokenized_train = [tokenize_text(text) for text in train_df[text_col_name].astype(str)]
-tokenized_test = [tokenize_text(text) for text in test_df[text_col_name].astype(str)]
+tokenized_train = [tokenize_text(text) for text in train_df[text_col_name]]
+tokenized_test = [tokenize_text(text) for text in test_df[text_col_name]]
 
 # 训练Word2Vec模型
 w2v_model = Word2Vec(sentences=tokenized_train, vector_size=300, window=5, min_count=1, workers=4)
@@ -113,7 +120,7 @@ label_encoder = LabelEncoder()
 y_train = label_encoder.fit_transform(train_df[label_col_name])
 y_test = label_encoder.transform(test_df[label_col_name])
 
-# 构建自定义数据集
+# 构建自定义数据集00
 class TextDataset(Dataset):
     def __init__(self, X, y):
         self.X = [get_embeddings(text) for text in X]
@@ -132,34 +139,37 @@ train_dataset = TextDataset(X_train, y_train)
 test_dataset = TextDataset(X_test, y_test)
 
 # 创建 DataLoader 实例
-batch_size = 128
+batch_size = 512
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 # 定义模型
-class BiLSTM(nn.Module):
-    def __init__(self, embedding_dim, hidden_dim, output_dim, dropout):
-        super(BiLSTM, self).__init__()
-        self.embedding_dim = embedding_dim
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, bidirectional=True, dropout=dropout)
-        self.fc = nn.Linear(hidden_dim * 2, output_dim)
-        self.dropout = nn.Dropout(dropout)
+class TextClassifier(nn.Module):
+    def __init__(self, embed_dim, hidden_dim, output_dim):
+        super(TextClassifier, self).__init__()
+        self.fc = nn.Linear(embed_dim, hidden_dim)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(DROPOUT)
+        self.out = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, text):
-        outputs, (hidden, cell) = self.lstm(text.unsqueeze(0))
-        hidden = self.dropout(torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1))
-        return self.fc(hidden)
+        hidden = self.fc(text)
+        hidden = self.relu(hidden)
+        hidden = self.dropout(hidden)
+        output = self.out(hidden)
+        return output
 
 # 初始化模型参数
-EMBEDDING_DIM = 300  # 与Word2Vec模型的维度一致
+EMBEDDING_DIM = 300  # 与Fasttext模型的维度一致
 HIDDEN_DIM = 256
 OUTPUT_DIM = len(label_encoder.classes_)  # 输出维度为类别数
 DROPOUT = 0.5
 
-model = BiLSTM(EMBEDDING_DIM, HIDDEN_DIM, OUTPUT_DIM, DROPOUT)
+
+model = TextClassifier(EMBEDDING_DIM, HIDDEN_DIM, OUTPUT_DIM)
 
 # 定义优化器和损失函数
-optimizer = optim.Adam(model.parameters())
+optimizer = optim.SGD(model.parameters(), lr=0.01)
 criterion = nn.CrossEntropyLoss()
 
 # 将模型移至GPU（如果可用）
@@ -232,9 +242,6 @@ accuracy = accuracy_score(np.array(all_labels), np.array(all_predictions))
 recall = recall_score(np.array(all_labels), np.array(all_predictions), average='weighted')
 f1 = f1_score(np.array(all_labels), np.array(all_predictions), average='weighted')
 
-print(f'Final Evaluation => '
-      f'Accuracy: {accuracy:.4f}, Recall: {recall:.4f}, F1 Score: {f1:.4f}')
-
 # 计算混淆矩阵
 conf_mat = confusion_matrix(np.array(all_labels), np.array(all_predictions))
 print(conf_mat)
@@ -247,6 +254,10 @@ plt.title('Confusion Matrix')
 # 设置图形质量参数（例如 DPI）
 plt.savefig(confusion_pic_save_path, dpi=300)  # 将图片保存为 'confusion_matrix.png'，300 DPI 表示较高分辨率
 plt.show()
+
+print(f'Final Evaluation => '
+      f'Accuracy: {accuracy:.4f}, Recall: {recall:.4f}, F1 Score: {f1:.4f}')
+
 # create a blank file to store the index of DataFrame
 columns = ['Epoch', 'Train Loss', 'Train Acc', 'Train Recall', 'Train F1']
 df = pd.DataFrame(list(zip(epoch_list, train_loss_list, train_acc_list

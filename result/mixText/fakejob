@@ -1,0 +1,19 @@
+#Labeled: 20, Unlabeled 5106, Val 2606, Test 5364
+
+epoch 29, step 0, loss 1.1380670070648193, Lx 0.4703611731529236, Lu 0.6907302737236023, Lu2 0.0
+Sample some true labeles and predicted labels
+tensor([0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0],
+       device='cuda:0')
+tensor([0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0],
+       device='cuda:0')
+epoch 29, val acc 0.6266308518802763, val_loss 1.161358270476803
+Epoch:  29
+Best acc:
+0.6976208749040675
+Test acc:
+[0.81972408650261]
+Finished training!
+Best acc:
+0.6976208749040675
+Test acc:
+[0.81972408650261]

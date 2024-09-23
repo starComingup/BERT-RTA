@@ -7,17 +7,16 @@ import dataset_utils as dru
 
 class AmazonDataset(Dataset):
     def __init__(self, tokenizer, max_length):
+        self.class_name=['positive','negative']
         content = dru.load_file("dataset/Amazon Musical Instruments Reviews/Musical_instruments_reviews.csv",
                                 has_header=True)
         # clean the dataset while content is blank and label lost.
-        clean_content = content.dropna(subset=['reviewText', 'overall'])
-        clean_content = clean_content.reset_index(drop=True)
+        content_filter = content[(content['overall'] != 3.0) & (content['overall'] != 4.0)].copy()  # 使用 .copy() 创建副本
+        clean_content = content_filter.reset_index(drop=True)
         texts = clean_content['reviewText']
         scores = clean_content['overall']
         labels = pd.to_numeric(scores, errors="coerce")
         labels = labels.replace(2, 1)
-        labels = labels.replace(3, 2)
-        labels = labels.replace(4, 0)
         labels = labels.replace(5, 0)
         self.texts = texts
         self.labels = torch.tensor(labels, dtype=torch.int64)
@@ -64,3 +63,15 @@ class AmazonDataset(Dataset):
         self.texts.extend(new_data)
         new_label_tensors = torch.tensor(new_labels)
         self.labels = torch.cat((self.labels, new_label_tensors), dim=0)
+
+    def get_text_by_category(self, category):
+        category_indices = [i for i, label in enumerate(self.labels) if label == category]
+        category_texts = [self.texts[i] for i in category_indices]
+        return category_texts
+
+    def get_data_label_map(self):
+        label_map = {
+            0: "good",
+            1: "bad"
+        }
+        return label_map

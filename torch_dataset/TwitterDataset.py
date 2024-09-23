@@ -11,6 +11,9 @@ class TwitterDataset(Dataset):
         content = content.dropna(axis=0, how="any")  # 剔除标签为空白的样本
         content.reset_index(drop=True, inplace=True)  # 重置索引
 
+        # content_filter = content[content['category'] != 0].copy()  # 使用 .copy() 创建副本
+        # content_filter.loc[content_filter['category'] == 0, 'category'] = 0
+        # content = content_filter
         proportion_to_keep = 0.1
         # 对每个类别进行层次抽样以保持原分布
         sampled_data = []
@@ -31,6 +34,7 @@ class TwitterDataset(Dataset):
         self.labels = torch.tensor(labels)
         self.tokenizer = tokenizer
         self.max_length = max_length
+        self.class_name = ['neutral','positive','negative']
 
     def __len__(self):
         return len(self.texts)
@@ -77,3 +81,10 @@ class TwitterDataset(Dataset):
         category_indices = [i for i, label in enumerate(self.labels) if label == category]
         category_texts = [self.texts[i] for i in category_indices]
         return category_texts
+
+    def get_data_label_map(self):
+        label_map = {
+            0: "negative",
+            1: "positive"
+        }
+        return label_map

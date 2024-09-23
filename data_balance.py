@@ -14,12 +14,12 @@ from torch_dataset.SpamDataset import SpamDataset
 from torch_dataset.FinancialDataset import FinancialDataset
 from torch_dataset.TwitterDataset import TwitterDataset
 from torch_dataset.YoutubeDataset import YoutubeDataset
+from torch_dataset.TwitterNDataset import TwitterNDataset
+from torch_dataset.FakeJobDataset import FakeJobDataset
 import torch
 from sklearn.metrics.pairwise import cosine_similarity
 from torch.utils.data import DataLoader
-from transformers import DistilBertForSequenceClassification, DistilBertTokenizer, T5ForConditionalGeneration, \
-    T5Tokenizer, AdamW, BertTokenizer, BertForSequenceClassification
-from t5_generate import generate_texts_using_t5
+from transformers import AdamW, BertTokenizer, BertForSequenceClassification
 
 
 def train(model, device, dataloader, optimizer, criterion, is_multi):
@@ -189,59 +189,6 @@ def cal_data_num_to_expand(dataset, samples_to_expand, major_cls):
     return data_to_expand, minority_dict
 
 
-def balance_to_major_class_num(old_data_dict, lack_num_dict):
-    new_texts = []
-    new_labels = []
-
-    # Iterate through the lack_num_dict to process each category
-    for key, value in lack_num_dict.items():
-        # Check if the key exists in the old_data_dict
-        if key in old_data_dict:
-            texts_to_generate_num = value  # Number of texts to generate for this category
-            existing_texts = old_data_dict[key]  # Existing texts in this category
-            expect_num_for_every_sample = math.floor(texts_to_generate_num / len(existing_texts))
-            # Generate new texts using T5 model and add them to new_texts
-            # Here, you would use your T5 model to generate new texts based on the existing ones
-            generated_texts = generate_texts_using_t5(existing_texts, expect_num_for_every_sample,
-                                                      t5_tokenizer=t5_tokenizer, t5_model=t5_model, dev=device0)
-            new_texts.extend(generated_texts)
-
-            # Add corresponding labels to new_labels based on the key
-            new_labels.extend([key] * len(generated_texts))
-        else:
-            print(f"Category {key} not found in old_data_dict.")
-
-    return new_texts, new_labels
-
-
-def t5_model_fine_tuning(trainDataset, epochs, batch_size, learning_rate):
-    optimizer = optim.AdamW(t5_model.parameters(), lr=learning_rate)
-    balanced_dataset = dru.balance_dataset_by_min_class_count(trainDataset, t5_tokenizer, max_len)
-    dataloader_balanced = DataLoader(balanced_dataset, batch_size=batch_size, shuffle=True)
-    for epoch in range(epochs):
-        total_loss = 0.0
-
-        for batchX in dataloader_balanced:
-            ids = batchX["input_ids"].to(device0)
-            att_mask = batchX["attention_mask"].to(device0)
-            b_labels = batchX['labels'].to(device0)
-
-            optimizer.zero_grad()
-
-            # Forward pass
-            model_outputs = t5_model(input_ids=ids, attention_mask=att_mask, labels=b_labels)
-            loss = model_outputs.loss
-
-            # Backpropagation and optimization
-            loss.backward()
-            optimizer.step()
-
-            total_loss += loss.item()
-
-        average_loss = total_loss / len(dataloader_balanced)
-        print(f"Epoch {epoch + 1}, Loss: {average_loss:.4f}")
-
-
 def bert_model_finetune(loader, finetune_epoch):
     finetune_optimizer = AdamW(bert_model.parameters(), lr=1e-5)
     bert_model.train()
@@ -266,47 +213,42 @@ def bert_model_finetune(loader, finetune_epoch):
 
 if __name__ == '__main__':
     num_classes = 3
-    device1 = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
-    device0 = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    device0 = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model_path_name = "./dataroot/models/bert-base-uncased"
     bert_tokenizer = BertTokenizer.from_pretrained(model_path_name)
     bert_model = BertForSequenceClassification.from_pretrained(model_path_name, num_labels=num_classes)
     max_len = 128
     batch_size = 128
-    dataset = YoutubeDataset(tokenizer=bert_tokenizer, max_length=max_len)
+    dataset = TwitterDataset(tokenizer=bert_tokenizer, max_length=max_len)
+    data_label_map = dataset.get_data_label_map()
     trainDataset, validDataset = dru.load_dataset(dataset, split_ratio=1)
     bert_model.to(device0)
 
     '''
-        reddit 0.04（nei_ratio_threshold = 4) epoch=5
-        spam 0.8
-        financial 0.3 epoch=7
-        youtube 0.18 epoch=7
-        twitter 0.21
-        amazon 0.4 
+        reddit 0.04（nei_ratio_threshold = 4) epoch=2
+        spam 0.19 epoch=3 (nei_ratio_threshold = 3)
+        financial 0.6 epoch=3 (nei_ratio_threshold = 3)
+        youtube 0.15 epoch=7 (nei_ratio_threshold = 3)
+        twitter 0.15 epoch=5 (nei_ratio_threshold = 3)
+        amazon 0.4 (nei_ratio_threshold = 2) epoch=5
+        tweetN 0.2 (nei_ratio_threshold = 2) epoch=10
+        fakeJob 0.8 (nei_ratio_threshold = 1) epoch=3
         '''
-    threshold = 0.15
+    threshold = 0.2
     # we advise if you want to find 5 neighbors, you should set neighbor_num as 6.
     neighbor_num = 6
     '''
     pls read the data README to adjust the param
     '''
-    major_cls = 2
+    major_cls = 1
     # the neighbor ratio, set 3 means the neighbor label same as the samples num should more than 3.
     nei_ratio_threshold = 3
-    # Load the T5 model and tokenizer
-    t5_model = T5ForConditionalGeneration.from_pretrained("./dataroot/models/flan-t5-base")
-    t5_tokenizer = T5Tokenizer.from_pretrained("./dataroot/models/flan-t5-base",
-                                               model_max_length=max_len)
-    emotion_mapping = {
-        0: 'neutral',
-        1: 'positive',
-        2: 'negative'
-    }
-    middle_synthetic_text_check = './result/middle/youtube_middle.csv'
-    middle_selected_text_check = './result/middle/youtube_samples_selected.csv'
+
+    # middle_synthetic_text_check = './result/middle/youtube_middle.csv'
+    # middle_selected_text_check = './result/middle/youtube_samples_selected.csv'
     # result_file_path = './result/bert/reddit_result_balanced_finetune.csv'
-    balanced_text_path = './dataset/youtube statistic/'+'balanced_data.csv'
+    # balanced_text_path = './dataset/youtube statistic/'+'balanced_data.csv'
+    middle_selected_text_check = './dataset/twitter sentiment analysis/'+'t20_5_3_selected_text.csv'
 
     dataloader = DataLoader(trainDataset, batch_size=batch_size, shuffle=True)
 
@@ -322,7 +264,7 @@ if __name__ == '__main__':
             labels = batch['labels'].to(device0)
             outputs = bert_model(input_ids, attention_mask=attention_mask, output_hidden_states=True)
             last_hidden_states = outputs.hidden_states[-1]
-            paragraph_embedding, _ = last_hidden_states.max(dim=1)
+            paragraph_embedding,_ = last_hidden_states.max(dim=1)
             embeddings.append(paragraph_embedding)
 
     embeddings = torch.cat(embeddings, dim=0).cpu().numpy()
@@ -369,21 +311,8 @@ if __name__ == '__main__':
 
     del similarities
 
-    t5_model.to(device0)
-
     # model_fine_tuning(trainDataset, t5_num_epoch, t5_batch_size, t5_learning_rate)
 
-    synthetic_texts, synthetic_labels = balance_to_major_class_num(data_to_expand_dict, minority_lack_num_dict)
-    data = {'m_texts': synthetic_texts, 'm_labels': synthetic_labels}
-    df = pd.DataFrame(data)
-    df.to_csv(middle_synthetic_text_check, index=False)
-    print("middle data synthetic successful!")
-
-    trainDataset = dru.append_dataset(trainDataset, synthetic_texts, synthetic_labels)
-    data = {'balanced_texts': trainDataset.texts, 'balanced_labels': trainDataset.labels}
-    df = pd.DataFrame(data)
-    df.to_csv(balanced_text_path, index=False)
-    print("data synthetic successful!")
 
     # # Clear GPU memory
     # torch.cuda.empty_cache()

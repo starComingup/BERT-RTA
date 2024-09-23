@@ -86,14 +86,14 @@ def load_dataset(
 
     train_dataset = type(dataset)(
         tokenizer=dataset.tokenizer,
-        max_length=dataset.max_length
+        max_length=dataset.max_length,
     )
     train_dataset.texts = [dataset.texts[i] for i in train_indices]
     train_dataset.labels = dataset.labels[train_indices]
 
     valid_dataset = type(dataset)(
         tokenizer=dataset.tokenizer,
-        max_length=dataset.max_length
+        max_length=dataset.max_length,
     )
     valid_dataset.texts = [dataset.texts[i] for i in valid_indices]
     valid_dataset.labels = dataset.labels[valid_indices]
@@ -119,6 +119,8 @@ def balance_dataset_by_min_class_count(dataset, tokenizer, max_len):
 
 def append_dataset(dataset, new_texts, new_labels):
     # append new data and label to train dataset
+    if isinstance(dataset.texts, pd.Series):
+        dataset.texts = dataset.texts.tolist()
     dataset.texts.extend(new_texts)
     new_label_tensors = torch.tensor(new_labels)
     dataset.labels = torch.cat((dataset.labels, new_label_tensors), dim=0)

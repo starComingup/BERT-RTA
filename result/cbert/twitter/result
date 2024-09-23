@@ -1,0 +1,90 @@
+Epoch 1/30
+Train Loss: 0.6091, Acc: 0.7456, Recall: 0.7456, F1-score: 0.7400
+Val Loss: 0.2794, Acc: 0.9055, Recall: 0.9055, F1-score: 0.9054
+Epoch 2/30
+Train Loss: 0.1698, Acc: 0.9485, Recall: 0.9485, F1-score: 0.9484
+Val Loss: 0.2455, Acc: 0.9350, Recall: 0.9350, F1-score: 0.9346
+Epoch 3/30
+Train Loss: 0.0727, Acc: 0.9794, Recall: 0.9794, F1-score: 0.9794
+Val Loss: 0.2793, Acc: 0.9356, Recall: 0.9356, F1-score: 0.9359
+Epoch 4/30
+Train Loss: 0.0360, Acc: 0.9901, Recall: 0.9901, F1-score: 0.9901
+Val Loss: 0.2878, Acc: 0.9340, Recall: 0.9340, F1-score: 0.9335
+Epoch 5/30
+Train Loss: 0.0220, Acc: 0.9939, Recall: 0.9939, F1-score: 0.9939
+Val Loss: 0.3086, Acc: 0.9350, Recall: 0.9350, F1-score: 0.9347
+Epoch 6/30
+Train Loss: 0.0134, Acc: 0.9960, Recall: 0.9960, F1-score: 0.9960
+Val Loss: 0.3165, Acc: 0.9408, Recall: 0.9408, F1-score: 0.9409
+Epoch 7/30
+Train Loss: 0.0078, Acc: 0.9979, Recall: 0.9979, F1-score: 0.9979
+Val Loss: 0.3241, Acc: 0.9429, Recall: 0.9429, F1-score: 0.9430
+Epoch 8/30
+Train Loss: 0.0041, Acc: 0.9991, Recall: 0.9991, F1-score: 0.9991
+Val Loss: 0.3394, Acc: 0.9405, Recall: 0.9405, F1-score: 0.9402
+Epoch 9/30
+Train Loss: 0.0039, Acc: 0.9992, Recall: 0.9992, F1-score: 0.9992
+Val Loss: 0.3280, Acc: 0.9439, Recall: 0.9439, F1-score: 0.9437
+Epoch 10/30
+Train Loss: 0.0032, Acc: 0.9994, Recall: 0.9994, F1-score: 0.9994
+Val Loss: 0.3357, Acc: 0.9433, Recall: 0.9433, F1-score: 0.9432
+Epoch 11/30
+Train Loss: 0.0023, Acc: 0.9995, Recall: 0.9995, F1-score: 0.9995
+Val Loss: 0.3385, Acc: 0.9429, Recall: 0.9429, F1-score: 0.9429
+Epoch 12/30
+Train Loss: 0.0230, Acc: 0.9934, Recall: 0.9934, F1-score: 0.9934
+Val Loss: 0.3407, Acc: 0.9184, Recall: 0.9184, F1-score: 0.9165
+Epoch 13/30
+Train Loss: 0.0179, Acc: 0.9945, Recall: 0.9945, F1-score: 0.9945
+Val Loss: 0.3063, Acc: 0.9411, Recall: 0.9411, F1-score: 0.9413
+Epoch 14/30
+Train Loss: 0.0086, Acc: 0.9974, Recall: 0.9974, F1-score: 0.9974
+Val Loss: 0.3623, Acc: 0.9377, Recall: 0.9377, F1-score: 0.9378
+Epoch 15/30
+Train Loss: 0.0063, Acc: 0.9981, Recall: 0.9981, F1-score: 0.9981
+Val Loss: 0.3266, Acc: 0.9396, Recall: 0.9396, F1-score: 0.9397
+Epoch 16/30
+Train Loss: 0.0044, Acc: 0.9988, Recall: 0.9988, F1-score: 0.9988
+Val Loss: 0.3512, Acc: 0.9387, Recall: 0.9387, F1-score: 0.9382
+Epoch 17/30
+Train Loss: 0.0020, Acc: 0.9995, Recall: 0.9995, F1-score: 0.9995
+Val Loss: 0.3628, Acc: 0.9405, Recall: 0.9405, F1-score: 0.9407
+Epoch 18/30
+Train Loss: 0.0016, Acc: 0.9995, Recall: 0.9995, F1-score: 0.9995
+Val Loss: 0.3661, Acc: 0.9417, Recall: 0.9417, F1-score: 0.9419
+Epoch 19/30
+Train Loss: 0.0012, Acc: 0.9998, Recall: 0.9998, F1-score: 0.9998
+Val Loss: 0.3685, Acc: 0.9439, Recall: 0.9439, F1-score: 0.9438
+Epoch 20/30
+Train Loss: 0.0003, Acc: 1.0000, Recall: 1.0000, F1-score: 1.0000
+Val Loss: 0.3700, Acc: 0.9442, Recall: 0.9442, F1-score: 0.9442
+Epoch 21/30
+Train Loss: 0.0011, Acc: 0.9997, Recall: 0.9997, F1-score: 0.9997
+Val Loss: 0.3711, Acc: 0.9439, Recall: 0.9439, F1-score: 0.9439
+Epoch 22/30
+Train Loss: 0.0128, Acc: 0.9963, Recall: 0.9963, F1-score: 0.9963
+Val Loss: 0.3124, Acc: 0.9390, Recall: 0.9390, F1-score: 0.9389
+Epoch 23/30
+Train Loss: 0.0102, Acc: 0.9973, Recall: 0.9973, F1-score: 0.9973
+Val Loss: 0.2612, Acc: 0.9390, Recall: 0.9390, F1-score: 0.9393
+Epoch 24/30
+Train Loss: 0.0066, Acc: 0.9982, Recall: 0.9982, F1-score: 0.9982
+Val Loss: 0.3330, Acc: 0.9387, Recall: 0.9387, F1-score: 0.9386
+Epoch 25/30
+Train Loss: 0.0063, Acc: 0.9981, Recall: 0.9981, F1-score: 0.9981
+Val Loss: 0.3339, Acc: 0.9429, Recall: 0.9429, F1-score: 0.9429
+Epoch 26/30
+Train Loss: 0.0032, Acc: 0.9995, Recall: 0.9995, F1-score: 0.9995
+Val Loss: 0.3981, Acc: 0.9383, Recall: 0.9383, F1-score: 0.9383
+Epoch 27/30
+Train Loss: 0.0019, Acc: 0.9993, Recall: 0.9993, F1-score: 0.9993
+Val Loss: 0.3851, Acc: 0.9433, Recall: 0.9433, F1-score: 0.9436
+Epoch 28/30
+Train Loss: 0.0010, Acc: 0.9997, Recall: 0.9997, F1-score: 0.9997
+Val Loss: 0.3948, Acc: 0.9411, Recall: 0.9411, F1-score: 0.9412
+Epoch 29/30
+Train Loss: 0.0008, Acc: 0.9997, Recall: 0.9997, F1-score: 0.9997
+Val Loss: 0.3871, Acc: 0.9429, Recall: 0.9429, F1-score: 0.9429
+[[1033   25   26]
+ [  11 1368   49]
+ [  19   56  673]]

@@ -6,6 +6,7 @@ from torch_dataset.RedditDataset import RedditDataset
 from torch_dataset.SpamDataset import SpamDataset
 from torch_dataset.TwitterDataset import TwitterDataset
 from torch_dataset.YoutubeDataset import YoutubeDataset
+from torch_dataset.TwitterNDataset import TwitterNDataset
 
 
 # Press the green button in the gutter to run the script.
@@ -14,6 +15,7 @@ if __name__ == '__main__':
     max_len = 128
 
     # amazonDataset = AmazonDataset(tokenizer, max_len)
+    # print(amazonDataset.get_class_counts())
     # for text in amazonDataset.texts[:25]:
     #     print(text)
     # for label in amazonDataset.labels[:25]:
@@ -29,6 +31,7 @@ if __name__ == '__main__':
     #     print(label)
 
     # financialDataset = FinancialDataset(tokenizer, max_len)
+    # print(financialDataset.get_class_counts())
     # for text in financialDataset.texts[:5]:
     #     print(text)
     # for label in financialDataset.labels[:5]:
@@ -41,6 +44,7 @@ if __name__ == '__main__':
     #     print(label)
 
     # redditDataset = RedditDataset(tokenizer, max_len)
+    # print(redditDataset.get_class_counts())
     # for text in redditDataset.texts[:5]:
     #     print(text)
     # for label in redditDataset.labels[:5]:
@@ -66,11 +70,9 @@ if __name__ == '__main__':
     # for label in twitterDataset.labels[:5]:
     #     print(label)
 
-    import spacy
+    youtubeDataset = YoutubeDataset(tokenizer, max_len)
+    print(youtubeDataset.get_class_counts())
 
-    # 获取spaCy版本
-    spacy_version = spacy.__version__
 
-    print("Your spaCy version is:", spacy_version)
 
 

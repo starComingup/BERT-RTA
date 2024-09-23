@@ -1,0 +1,1 @@
+This directory use to store the result of every model.

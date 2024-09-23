@@ -8,16 +8,19 @@ class RedditDataset(Dataset):
     def __init__(self, tokenizer, max_length):
         content = dru.load_file("dataset/reddit sentiment analysis/Reddit_Data.csv",
                                 has_header=True)
+        content = content.dropna(axis=0, how="any")  # 剔除标签为空白的样本
+        content.reset_index(drop=True, inplace=True)  # 重置索引
         texts = content['clean_comment']
         labels = content['category']
         labels = pd.to_numeric(labels, errors="coerce")
-        # Convert -1 to 2 in labels
+        # Convert -1 to 0 in labels
         labels = labels.replace(-1, 2)
 
         self.texts = texts
         self.labels = torch.tensor(labels)
         self.tokenizer = tokenizer
         self.max_length = max_length
+        self.class_name = ['negative','neutral', 'positive']
 
     def __len__(self):
         return len(self.texts)
@@ -59,4 +62,16 @@ class RedditDataset(Dataset):
         self.texts.extend(new_data)
         new_label_tensors = torch.tensor(new_labels)
         self.labels = torch.cat((self.labels, new_label_tensors), dim=0)
+
+    def get_text_by_category(self, category):
+        category_indices = [i for i, label in enumerate(self.labels) if label == category]
+        category_texts = [self.texts[i] for i in category_indices]
+        return category_texts
+
+    def get_data_label_map(self):
+        label_map = {
+            0: "negative",
+            1: "positive"
+        }
+        return label_map
 

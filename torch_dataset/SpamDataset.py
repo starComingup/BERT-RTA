@@ -10,20 +10,22 @@ def label_mapping(categories):
     label_encoder = LabelEncoder()
     # use LabelEncoder to encoder the categories
     encoded_labels = label_encoder.fit_transform(categories)
-    return encoded_labels
+    return encoded_labels, label_encoder.classes_
 
 
 class SpamDataset(Dataset):
     def __init__(self, tokenizer, max_length):
+
         content = dru.load_file("dataset/spam/spam.csv",
                                 has_header=True)
         texts = content['v2']
         v1 = content['v1']
-        labels = label_mapping(v1)
+        labels,label_class = label_mapping(v1)
         self.texts = texts
         self.labels = torch.tensor(labels)
         self.tokenizer = tokenizer
         self.max_length = max_length
+        self.class_name = label_class
 
     def __len__(self):
         return len(self.texts)
@@ -65,3 +67,15 @@ class SpamDataset(Dataset):
         self.texts.extend(new_data)
         new_label_tensors = torch.tensor(new_labels)
         self.labels = torch.cat((self.labels, new_label_tensors), dim=0)
+
+    def get_text_by_category(self, category):
+        category_indices = [i for i, label in enumerate(self.labels) if label == category]
+        category_texts = [self.texts[i] for i in category_indices]
+        return category_texts
+
+    def get_data_label_map(self):
+        label_map = {
+            0: "ham",
+            1: "spam"
+        }
+        return label_map

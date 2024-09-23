@@ -1,25 +1,37 @@
 import torch
+from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import Dataset
 import dataset_utils as dru
-import pandas as pd
 
+def label_mapping(categories):
+    # create LabelEncoder 对象
+    label_encoder = LabelEncoder()
+    # use LabelEncoder to encoder the categories
+    encoded_labels = label_encoder.fit_transform(categories)
+    return encoded_labels
 
-class YoutubeDataset(Dataset):
+class TwitterNDataset(Dataset):
     def __init__(self, tokenizer, max_length):
-        content = dru.load_file("dataset/youtube statistic/comments.csv",
+        self.class_name=['fun','hate','love','relief','surprise']
+        content = dru.load_file("dataset/tweeter n_emotion/tweet_emotions.csv",
                                 has_header=True)
-
         content = content.dropna(axis=0, how="any")  # 剔除标签为空白的样本
         content.reset_index(drop=True, inplace=True)  # 重置索引
 
-        texts = content['Comment']
-        sentiments = content['Sentiment']
-        labels = pd.to_numeric(sentiments, errors="coerce").astype(int)
+        content_filter = content[(content['sentiment'] != 'worry')
+                                 & (content['sentiment'] != 'neutral') & (content['sentiment'] != 'empty')
+                                 & (content['sentiment'] != 'anger') & (content['sentiment'] != 'boredom')
+                                 & (content['sentiment'] != 'enthusiasm') & (content['sentiment'] != 'sadness')
+                                 & (content['sentiment'] != 'happiness')].copy()
+        content_filter.reset_index(drop=True, inplace=True)
+        texts = content_filter['content']
+        categories = content_filter['sentiment']
+        labels = label_mapping(categories)
+
         self.texts = texts
         self.labels = torch.tensor(labels)
         self.tokenizer = tokenizer
         self.max_length = max_length
-        self.class_name = ['negative','positive']
 
     def __len__(self):
         return len(self.texts)
@@ -57,7 +69,7 @@ class YoutubeDataset(Dataset):
         return class_counts
 
     def append_data(self, new_data, new_labels):
-        # 向数据集追加新数据和标签
+        # append new data and labels to dataset
         self.texts.extend(new_data)
         new_label_tensors = torch.tensor(new_labels)
         self.labels = torch.cat((self.labels, new_label_tensors), dim=0)
@@ -69,8 +81,10 @@ class YoutubeDataset(Dataset):
 
     def get_data_label_map(self):
         label_map = {
-            0: "negative",
-            1: "positive"
+            0: 'fun',
+            1: 'hate',
+            2: 'love',
+            3: 'relief',
+            4: 'surprise'
         }
         return label_map
-

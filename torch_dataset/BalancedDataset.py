@@ -6,7 +6,11 @@ import warnings
 
 class BalancedDataset(Dataset):
     def __init__(self, tokenizer, max_length):
-        youtube_file_path = 'dataset/youtube statistic/balanced_data.csv'
+        self.class_name = ['negative', 'neutral', 'positive']
+        # self.class_name = ['Real','Fake']
+        youtube_file_path = 'dataset/twitter sentiment analysis/eda_selected_sampled_t20_5_3_balanced_data.csv'
+        # youtube_file_path = 'dataset/youtube statistic/eda_selected_sampled_balanced_data.csv'
+        #youtube_file_path = 'dataset/spam/balanced_data.csv'
         input_file_path = youtube_file_path
         print('input file path is:'+input_file_path)
         content = dru.load_file(input_file_path,

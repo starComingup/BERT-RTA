@@ -1,0 +1,14 @@
+Epoch 27/30
+Train Loss: 0.0021, Acc: 0.9988, Recall: 0.9988, F1-score: 0.9988
+Val Loss: 0.1679, Acc: 0.9799, Recall: 0.9799, F1-score: 0.9784
+Epoch 28/30
+Train Loss: 0.0030, Acc: 0.9989, Recall: 0.9989, F1-score: 0.9989
+Val Loss: 0.1580, Acc: 0.9793, Recall: 0.9793, F1-score: 0.9780
+Epoch 29/30
+Train Loss: 0.0033, Acc: 0.9983, Recall: 0.9983, F1-score: 0.9983
+Val Loss: 0.1710, Acc: 0.9796, Recall: 0.9796, F1-score: 0.9782
+[[3382   15]
+ [  59  120]]
+Epoch 30/30
+Train Loss: 0.0027, Acc: 0.9986, Recall: 0.9986, F1-score: 0.9986
+Val Loss: 0.1694, Acc: 0.9793, Recall: 0.9793, F1-score: 0.9779

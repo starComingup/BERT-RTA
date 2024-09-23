@@ -13,8 +13,12 @@ import torch.optim as optim
 import pandas as pd
 from torch.utils.data import DataLoader
 
+from torch_dataset.SpamDataset import SpamDataset
+from torch_dataset.TwitterDataset import TwitterDataset
 from torch_dataset.YoutubeDataset import YoutubeDataset
 from torch_dataset.FinancialDataset import FinancialDataset
+from torch_dataset.RedditDataset import RedditDataset
+from torch_dataset.FakeJobDataset import FakeJobDataset
 from data_balance import train, validate
 import dataset_utils as dru
 
@@ -243,124 +247,136 @@ def eda(sentence, alpha_sr=0.1, alpha_ri=0.1, alpha_rs=0.1, p_rd=0.1, num_aug=9)
         keep_prob = num_aug / len(augmented_sentences)
         augmented_sentences = [s for s in augmented_sentences if random.uniform(0, 1) < keep_prob]
 
-    # append the original sentence
-    augmented_sentences.append(sentence)
-
     return augmented_sentences
 
 
-def cal_every_minority_data_need_to_expand_num(count):
+def cal_every_minority_data_need_to_expand_num(count, sample_num_dict):
     max_key = max(count, key=count.get)
     max_value = count[max_key]
     every_category_lack_dict = {}
     for key, value in count.items():
         if key != max_key:
-            expand_num = math.ceil(max_value / value)
+            expand_num = int((max_value-value) / sample_num_dict[key])
             every_category_lack_dict[key] = expand_num
     return every_category_lack_dict
 
 
-def synthetic_samples(data1_class, data2_class, data1, data2, expand_dict):
+def synthetic_samples_for_binary_classes(data1_class, data1, expand_dict):
     alpha_sr = 0.1  # default
     alpha_ri = 0.1
     alpha_rs = 0.1
     alpha_rd = 0.1
     synthe_texts = []
     synthe_labels = []
+    num_aug = expand_dict[data1_class]
     for sentence in data1:
         aug_sentences = eda(sentence, alpha_sr=alpha_sr, alpha_ri=alpha_ri, alpha_rs=alpha_rs, p_rd=alpha_rd,
-                            num_aug=expand_dict[data1_class])
-        if not any(not s.strip() for s in aug_sentences):
-            synthe_texts.append(aug_sentences)
+                            num_aug=num_aug)
+        synthe_texts.extend(aug_sentences)
     data1_len = len(synthe_texts)
     synthe_labels.extend([data1_class] * data1_len)
 
-    for sentence in data2:
-        aug_sentences = eda(sentence, alpha_sr=alpha_sr, alpha_ri=alpha_ri, alpha_rs=alpha_rs, p_rd=alpha_rd,
-                            num_aug=expand_dict[data2_class])
-        if not any(not s.strip() for s in aug_sentences):
-            synthe_texts.append(aug_sentences)
-    data2_len = len(synthe_texts) - data1_len
-    synthe_labels.extend([data2_class] * data2_len)
     return synthe_texts, synthe_labels
 
+def synthetic_samples_for_three_classes(data1_class, data1, data2_class, data2, expand_dict):
+    alpha_sr = 0.1  # default
+    alpha_ri = 0.1
+    alpha_rs = 0.1
+    alpha_rd = 0.1
+    synthe_texts = []
+    synthe_labels = []
+    num_aug = expand_dict[data1_class]
+    for sentence in data1:
+        aug_sentences = eda(sentence, alpha_sr=alpha_sr, alpha_ri=alpha_ri, alpha_rs=alpha_rs, p_rd=alpha_rd,
+                            num_aug=num_aug)
+        synthe_texts.extend(aug_sentences)
+    data1_len = len(synthe_texts)
+    synthe_labels.extend([data1_class] * data1_len)
 
-if __name__ == '__main__':
-    num_of_category = 3
-    result_file_path = './result/eda/financial_result_balanced_eda.csv'
-    model_path_name = "./dataroot/models/bert-base-uncased"
-    bert_tokenizer = BertTokenizer.from_pretrained(model_path_name)
-    bert_model = BertForSequenceClassification.from_pretrained(model_path_name, num_labels=num_of_category)
+    num_aug = expand_dict[data2_class]
+    for sentence in data2:
+        aug_sentences = eda(sentence, alpha_sr=alpha_sr, alpha_ri=alpha_ri, alpha_rs=alpha_rs, p_rd=alpha_rd,
+                            num_aug=num_aug)
+        synthe_texts.extend(aug_sentences)
+    data2_len = len(synthe_texts) - data1_len
+    synthe_labels.extend([data2_class] * data2_len)
 
-    dataset = FinancialDataset(tokenizer=bert_tokenizer, max_length=128)
-    trainDataset, validDataset = dru.load_dataset(dataset, split_ratio=0.8)
-    category_1 = 1
-    category_2 = 2
-    category_1_text = trainDataset.get_text_by_category(category_1)
-    category_2_text = trainDataset.get_text_by_category(category_2)
-    major_cls = 0
+    return synthe_texts, synthe_labels
+
+def random_balanced():
+    balanced_text_path = './dataset/youtube statistic/' + 'eda_random_sampled_balanced_data.csv'
+    bert_tokenizer = None
+
+    dataset = YoutubeDataset(tokenizer=bert_tokenizer, max_length=128)
+    trainDataset, validDataset = dru.load_dataset(dataset, split_ratio=1)
+
+    category_to_expand = 0
+    category_1_text = trainDataset.get_text_by_category(category_to_expand)
+
+    sampled_num = 21
+    random_samples = random.sample(category_1_text, sampled_num)
+
+    category_to_expand2 = 1
+    category_2_text = trainDataset.get_text_by_category(category_to_expand2)
+    sampled_num2 = 166
+    random_samples2 = random.sample(category_2_text, sampled_num2)
+
+
     class_count = trainDataset.get_class_counts()
-    category_to_expand_dict = cal_every_minority_data_need_to_expand_num(class_count)
-    synthetic_texts, synthetic_labels = synthetic_samples(category_1, category_2,
-                                                          category_1_text, category_2_text, category_to_expand_dict)
+    # category_to_expand_dict = cal_every_minority_data_need_to_expand_num(class_count, sampled_num)
+    # synthetic_texts, synthetic_labels = synthetic_samples_for_binary_classes(category_to_expand,
+    #                                                       random_samples, category_to_expand_dict)
+    sample_num_dict = {category_to_expand: sampled_num, category_to_expand2: sampled_num2}
+    category_to_expand_dict = cal_every_minority_data_need_to_expand_num(class_count, sample_num_dict)
+    synthetic_texts, synthetic_labels = synthetic_samples_for_three_classes(category_to_expand, random_samples,
+                                                                            category_to_expand2, random_samples2,
+                                                                            category_to_expand_dict)
     print("data synthetic successful!", len(synthetic_texts), ",", len(synthetic_labels))
 
     trainDataset = dru.append_dataset(trainDataset, synthetic_texts, synthetic_labels)
+    data = {'balanced_texts': trainDataset.texts, 'balanced_labels': trainDataset.labels}
+    df = pd.DataFrame(data)
+    df.to_csv(balanced_text_path, index=False)
+    print("data synthetic write successful!")
 
-    device1 = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    bert_model.to(device1)
+def selected_balanced():
+    bert_tokenizer = None
+    selected_data_path = './dataset/twitter sentiment analysis/'+'selected_text.csv'
+    aug_text_path = './dataset/twitter sentiment analysis/' + 'eda_selected.csv'
+    balanced_text_path = './dataset/twitter sentiment analysis/' + 'eda_selected_sampled_balanced_data.csv'
+    dataset = TwitterDataset(tokenizer=bert_tokenizer, max_length=128)
 
-    num_epochs = 50
-    batch_size = 128
-    lr = 3e-5
-    min_lr = 1e-8
-    T0 = 10
-    T_min = 1
-    alpha = 0.95
+    content = pd.read_csv(selected_data_path)
+    # selected_texts = content['selected_texts']
 
-    optimizer = optim.AdamW(bert_model.parameters(), lr=lr)
-    criterion = nn.CrossEntropyLoss()
-    scheduler = lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=T0, T_mult=1, eta_min=min_lr, last_epoch=-1)
+    dataset, ignore = dru.load_dataset(dataset,split_ratio=1)
 
-    train_dataloader = DataLoader(trainDataset, batch_size=batch_size, shuffle=True)
-    val_dataloader = DataLoader(validDataset, batch_size=batch_size, shuffle=True)
+    class_count = dataset.get_class_counts()
 
-    epoch_list = []
-    train_loss_list = []
-    train_acc_list = []
-    train_recall_list = []
-    train_f1_list = []
-    valid_loss_list = []
-    valid_acc_list = []
-    valid_recall_list = []
-    valid_f1_list = []
+    category_to_expand = 0
+    category_to_expand2 = 2
+    selected_texts = content[content['selected_labels'] == category_to_expand]['selected_texts']
+    selected_texts2 = content[content['selected_labels'] == category_to_expand2]['selected_texts']
+    sample_num_dict = {category_to_expand:len(selected_texts), category_to_expand2:len(selected_texts2)}
+    category_to_expand_dict = cal_every_minority_data_need_to_expand_num(class_count, sample_num_dict)
+    synthetic_texts, synthetic_labels = synthetic_samples_for_three_classes(category_to_expand,selected_texts,
+                                                                            category_to_expand2,selected_texts2,
+                                                                            category_to_expand_dict)
+    # category_to_expand = 1
+    # selected_texts = content[content['selected_labels'] == category_to_expand]['selected_texts']
+    # sample_num_dict = {category_to_expand: len(selected_texts)}
+    # category_to_expand_dict = cal_every_minority_data_need_to_expand_num(class_count, sample_num_dict)
+    # synthetic_texts, synthetic_labels = synthetic_samples_for_binary_classes(category_to_expand, selected_texts, category_to_expand_dict)
+    print("data synthetic successful!", len(synthetic_texts), ",", len(synthetic_labels))
+    data0 = {'balanced_texts': synthetic_texts, 'balanced_labels': synthetic_labels}
+    df = pd.DataFrame(data0)
+    df.to_csv(aug_text_path, index=False)
+    dataset = dru.append_dataset(dataset, synthetic_texts, synthetic_labels)
+    data = {'balanced_texts': dataset.texts, 'balanced_labels': dataset.labels}
+    df = pd.DataFrame(data)
+    df.to_csv(balanced_text_path, index=False)
+    print("data synthetic write successful!")
 
-    # judge is multi classes or not
-    multi_classes = num_of_category > 2
-    for epoch in range(num_epochs):
-        train_loss, train_acc, train_recall, train_f1 = \
-            train(bert_model, device1, train_dataloader, optimizer, criterion, multi_classes)
-        val_loss, val_acc, val_recall, val_f1 = validate(bert_model, device1, val_dataloader, criterion, multi_classes)
-        scheduler.step(epoch)
+if __name__ == '__main__':
+    selected_balanced()
 
-        print(f"Epoch {epoch + 1}/{num_epochs}")
-        print(
-            f"Train Loss: {train_loss:.4f}, Acc: {train_acc:.4f}, Recall: {train_recall:.4f}, F1-score: {train_f1:.4f}")
-        print(f"Val Loss: {val_loss:.4f}, Acc: {val_acc:.4f}, Recall: {val_recall:.4f}, F1-score: {val_f1:.4f}")
-        epoch_list.append(epoch + 1)
-        train_acc_list.append(train_acc)
-        train_loss_list.append(train_loss)
-        train_recall_list.append(train_recall)
-        train_f1_list.append(train_f1)
-        valid_acc_list.append(val_acc)
-        valid_loss_list.append(val_loss)
-        valid_recall_list.append(val_recall)
-        valid_f1_list.append(val_f1)
-
-    # create a blank file to store the index of DataFrame
-    columns = ['Epoch', 'Train Loss', 'Train Acc', 'Train Recall', 'Train F1', 'Val Loss', 'Val Acc', 'Val Recall',
-               'Val F1']
-    df = pd.DataFrame(list(zip(epoch_list, train_loss_list, train_acc_list, train_recall_list, train_f1_list,
-                               valid_loss_list, valid_acc_list, valid_recall_list, valid_f1_list)), columns=columns)
-    # save DataFrame to csv file
-    df.to_csv(result_file_path, index=False)

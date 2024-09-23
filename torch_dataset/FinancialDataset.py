@@ -6,8 +6,8 @@ import dataset_utils as dru
 def label_mapping(sentiments):
     label_map = {
         "negative": 2,
-        "neutral": 0,
-        "positive": 1
+        "positive": 1,
+        "neutral": 0
     }
     labels = [label_map[sentiment] for sentiment in sentiments]
     return labels
@@ -15,8 +15,11 @@ def label_mapping(sentiments):
 
 class FinancialDataset(Dataset):
     def __init__(self, tokenizer, max_length):
+        self.class_name = ['neutral','positive','negative']
         content = dru.load_file("dataset/financial sentiment analysis/data.csv",
                                 has_header=True)
+        content = content.dropna(axis=0, how="any")  # 剔除标签为空白的样本
+        content.reset_index(drop=True, inplace=True)  # 重置索引
         texts = content['Sentence']
         sentiments = content['Sentiment']
         labels = label_mapping(sentiments)
@@ -70,3 +73,10 @@ class FinancialDataset(Dataset):
         category_indices = [i for i, label in enumerate(self.labels) if label == category]
         category_texts = [self.texts[i] for i in category_indices]
         return category_texts
+
+    def get_data_label_map(self):
+        label_map = {
+            0: "negative",
+            1: "positive"
+        }
+        return label_map
